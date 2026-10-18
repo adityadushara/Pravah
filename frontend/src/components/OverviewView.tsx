@@ -19,6 +19,8 @@ interface OverviewViewProps {
   onSelectForecast: (item: InventoryItem) => void;
   onNavigateTab: (tab: any) => void;
   onOpenTransaction: (item: InventoryItem) => void;
+  canMutateInventory?: boolean;
+  allowedTabs?: string[];
 }
 
 export const OverviewView: React.FC<OverviewViewProps> = ({
@@ -28,6 +30,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   onSelectForecast,
   onNavigateTab,
   onOpenTransaction,
+  canMutateInventory = true,
+  allowedTabs = ["overview", "inventory", "forecasts", "locations", "transportation", "alerts", "audit_logs"],
 }) => {
   const healthyCount = inventory.filter((i) => i.status === "Healthy").length;
   const lowCount = inventory.filter((i) => i.status === "Low").length;
@@ -54,9 +58,11 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
             Centralized monitoring of forward supply readiness, depot inventory balances, and baseline demand forecasts.
           </p>
         </div>
-        <button className="btn btn-secondary" onClick={() => onNavigateTab("inventory")}>
-          View Full Inventory <ArrowUpRight size={14} />
-        </button>
+        {allowedTabs.includes("inventory") && (
+          <button className="btn btn-secondary" onClick={() => onNavigateTab("inventory")}>
+            View Full Inventory <ArrowUpRight size={14} />
+          </button>
+        )}
       </div>
 
       {/* METRICS ROW */}
@@ -119,9 +125,11 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
               <h2 className="card-title">Depot Stock Positions</h2>
               <div className="card-subtitle">Real-time balances synchronized from PostgreSQL/Supabase</div>
             </div>
-            <button className="btn btn-secondary btn-sm" onClick={() => onNavigateTab("inventory")}>
-              Manage Stock
-            </button>
+            {allowedTabs.includes("inventory") && (
+              <button className="btn btn-secondary btn-sm" onClick={() => onNavigateTab("inventory")}>
+                Manage Stock
+              </button>
+            )}
           </div>
 
           <div className="table-responsive">
@@ -161,20 +169,27 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
                     </td>
                     <td>
                       <div style={{ display: "flex", gap: "4px" }}>
-                        <button
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => onOpenTransaction(item)}
-                          title="Record Receipt or Issue"
-                        >
-                          Transact
-                        </button>
-                        <button
-                          className="btn btn-outline-primary btn-sm"
-                          onClick={() => onSelectForecast(item)}
-                          title="View 7-day Demand Forecast"
-                        >
-                          Forecast
-                        </button>
+                        {canMutateInventory && (
+                          <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => onOpenTransaction(item)}
+                            title="Record Receipt or Issue"
+                          >
+                            Transact
+                          </button>
+                        )}
+                        {allowedTabs.includes("forecasts") && (
+                          <button
+                            className="btn btn-outline-primary btn-sm"
+                            onClick={() => onSelectForecast(item)}
+                            title="View 7-day Demand Forecast"
+                          >
+                            Forecast
+                          </button>
+                        )}
+                        {!canMutateInventory && !allowedTabs.includes("forecasts") && (
+                          <span style={{ fontSize: 11, color: "#94a3b8" }}>Read-Only</span>
+                        )}
                       </div>
                     </td>
                   </tr>

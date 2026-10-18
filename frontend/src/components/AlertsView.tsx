@@ -6,11 +6,13 @@ import { acknowledgeAlert } from "../api";
 interface AlertsViewProps {
   alerts: AlertItem[];
   onAlertAcknowledged: () => void;
+  canAcknowledge?: boolean;
 }
 
 export const AlertsView: React.FC<AlertsViewProps> = ({
   alerts,
   onAlertAcknowledged,
+  canAcknowledge = true,
 }) => {
   const [filter, setFilter] = useState<"all" | "critical" | "warning">("all");
   const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
@@ -114,13 +116,19 @@ export const AlertsView: React.FC<AlertsViewProps> = ({
 
                 <div>
                   {alert.status === "open" ? (
-                    <button
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => handleAcknowledge(alert.id)}
-                      disabled={acknowledgingId === alert.id}
-                    >
-                      <Check size={13} /> {acknowledgingId === alert.id ? "Updating..." : "Acknowledge"}
-                    </button>
+                    canAcknowledge ? (
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => handleAcknowledge(alert.id)}
+                        disabled={acknowledgingId === alert.id}
+                      >
+                        <Check size={13} /> {acknowledgingId === alert.id ? "Updating..." : "Acknowledge"}
+                      </button>
+                    ) : (
+                      <span style={{ fontSize: 11, color: "#94a3b8", fontStyle: "italic" }}>
+                        Review Only
+                      </span>
+                    )
                   ) : (
                     <span style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>Acknowledged</span>
                   )}

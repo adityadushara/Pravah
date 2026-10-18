@@ -14,7 +14,7 @@ import {
   Database,
   LogOut
 } from "lucide-react";
-import { NavTab, DemoAccount } from "../types";
+import { NavTab, DemoAccount, getRolePermissions } from "../types";
 
 interface SidebarProps {
   currentTab: NavTab;
@@ -47,6 +47,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: "settings", label: "Settings", icon: <SettingsIcon size={18} /> },
   ];
 
+  const roleConfig = getRolePermissions(userRole);
+  const visibleNavItems = navItems.filter((item) => roleConfig.allowedTabs.includes(item.id));
+
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
@@ -62,9 +65,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       <div className="sidebar-nav-container">
-        <div className="nav-section-label">Logistics Workspace</div>
+        <div className="nav-section-label">Accessible Dashboards</div>
         <nav style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          {navItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <button
               key={item.id}
               className={`nav-item ${currentTab === item.id ? "active" : ""}`}

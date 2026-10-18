@@ -18,6 +18,7 @@ interface InventoryViewProps {
   onOpenTransaction: (item: InventoryItem, defaultType?: "receipt" | "issue" | "adjustment" | "transfer") => void;
   onOpenForecast: (item: InventoryItem) => void;
   loading: boolean;
+  canMutateInventory?: boolean;
 }
 
 export const InventoryView: React.FC<InventoryViewProps> = ({
@@ -26,6 +27,7 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
   onOpenTransaction,
   onOpenForecast,
   loading,
+  canMutateInventory = true,
 }) => {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -228,35 +230,47 @@ export const InventoryView: React.FC<InventoryViewProps> = ({
                       </span>
                     </td>
                     <td style={{ textAlign: "right" }}>
-                      <div style={{ display: "inline-flex", gap: "4px" }}>
-                        <button
-                          className="btn btn-outline-primary btn-sm"
-                          onClick={() => onOpenTransaction(item, "receipt")}
-                          title="Record Receipt of Stock"
-                        >
-                          <PlusCircle size={13} /> Receive
-                        </button>
-                        <button
-                          className="btn btn-outline-danger btn-sm"
-                          onClick={() => onOpenTransaction(item, "issue")}
-                          title="Issue Stock"
-                        >
-                          <MinusCircle size={13} /> Issue
-                        </button>
-                        <button
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => onOpenTransaction(item, "transfer")}
-                          title="Atomic Transfer to Another Depot"
-                        >
-                          <ArrowRightLeft size={13} /> Transfer
-                        </button>
-                        <button
-                          className="btn btn-secondary btn-sm"
-                          onClick={() => onOpenTransaction(item, "adjustment")}
-                          title="Stock Adjustment (Requires Justification)"
-                        >
-                          <SlidersHorizontal size={13} />
-                        </button>
+                      <div style={{ display: "inline-flex", gap: "4px", alignItems: "center" }}>
+                        {canMutateInventory ? (
+                          <>
+                            <button
+                              className="btn btn-outline-primary btn-sm"
+                              onClick={() => onOpenTransaction(item, "receipt")}
+                              title="Record Receipt of Stock"
+                            >
+                              <PlusCircle size={13} /> Receive
+                            </button>
+                            <button
+                              className="btn btn-outline-danger btn-sm"
+                              onClick={() => onOpenTransaction(item, "issue")}
+                              title="Issue Stock"
+                            >
+                              <MinusCircle size={13} /> Issue
+                            </button>
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              onClick={() => onOpenTransaction(item, "transfer")}
+                              title="Atomic Transfer to Another Depot"
+                            >
+                              <ArrowRightLeft size={13} /> Transfer
+                            </button>
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              onClick={() => onOpenTransaction(item, "adjustment")}
+                              title="Stock Adjustment (Requires Justification)"
+                            >
+                              <SlidersHorizontal size={13} />
+                            </button>
+                          </>
+                        ) : (
+                          <span
+                            className="status-pill"
+                            style={{ background: "#f1f5f9", color: "#64748b", border: "1px solid #e2e8f0" }}
+                            title="Your role has read-only access to stock records"
+                          >
+                            Read-Only
+                          </span>
+                        )}
                         <button
                           className="btn btn-secondary btn-sm"
                           onClick={() => onOpenForecast(item)}

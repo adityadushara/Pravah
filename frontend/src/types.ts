@@ -113,3 +113,71 @@ export type NavTab =
   | "audit_logs"
   | "users"
   | "settings";
+
+export interface RolePermissionConfig {
+  allowedTabs: NavTab[];
+  canMutateInventory: boolean;
+  canManageShipments: boolean;
+  canManageUsers: boolean;
+  canAcknowledgeAlerts: boolean;
+  canViewAuditLogs: boolean;
+}
+
+export const ROLE_PERMISSIONS: Record<string, RolePermissionConfig> = {
+  "System Administrator": {
+    allowedTabs: ["overview", "inventory", "forecasts", "locations", "transportation", "alerts", "audit_logs", "users", "settings"],
+    canMutateInventory: true,
+    canManageShipments: true,
+    canManageUsers: true,
+    canAcknowledgeAlerts: true,
+    canViewAuditLogs: true,
+  },
+  "Senior Logistics Officer": {
+    allowedTabs: ["overview", "inventory", "forecasts", "locations", "transportation", "alerts", "audit_logs"],
+    canMutateInventory: true,
+    canManageShipments: true,
+    canManageUsers: false,
+    canAcknowledgeAlerts: true,
+    canViewAuditLogs: true,
+  },
+  "Inventory Officer": {
+    allowedTabs: ["overview", "inventory", "locations", "alerts"],
+    canMutateInventory: true,
+    canManageShipments: false,
+    canManageUsers: false,
+    canAcknowledgeAlerts: true,
+    canViewAuditLogs: false,
+  },
+  "Transportation Officer": {
+    allowedTabs: ["overview", "transportation", "locations", "alerts"],
+    canMutateInventory: false,
+    canManageShipments: true,
+    canManageUsers: false,
+    canAcknowledgeAlerts: true,
+    canViewAuditLogs: false,
+  },
+  "Forecasting Analyst": {
+    allowedTabs: ["overview", "forecasts", "inventory", "locations"],
+    canMutateInventory: false,
+    canManageShipments: false,
+    canManageUsers: false,
+    canAcknowledgeAlerts: false,
+    canViewAuditLogs: false,
+  },
+  "Read-only Auditor": {
+    allowedTabs: ["overview", "inventory", "alerts", "audit_logs"],
+    canMutateInventory: false,
+    canManageShipments: false,
+    canManageUsers: false,
+    canAcknowledgeAlerts: false,
+    canViewAuditLogs: true,
+  },
+};
+
+export function getRolePermissions(roleName: string): RolePermissionConfig {
+  return (
+    ROLE_PERMISSIONS[roleName] ||
+    ROLE_PERMISSIONS["Read-only Auditor"]
+  );
+}
+

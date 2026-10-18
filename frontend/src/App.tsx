@@ -22,6 +22,7 @@ import {
   AuditLogItem,
   RoleItem,
   DemoAccount,
+  getRolePermissions,
 } from "./types";
 import {
   fetchSummary,
@@ -33,7 +34,7 @@ import {
   fetchRoles,
   fetchDemoAccounts,
 } from "./api";
-import { AlertCircle, ShieldCheck, X } from "lucide-react";
+import { AlertCircle, ShieldCheck, ShieldAlert, X } from "lucide-react";
 
 const INITIAL_DEMO_ACCOUNTS: DemoAccount[] = [
   {
@@ -164,6 +165,10 @@ export default function App() {
   const handleLogin = (account: DemoAccount) => {
     setCurrentUser(account);
     setUserRole(account.role);
+    const config = getRolePermissions(account.role);
+    if (!config.allowedTabs.includes(currentTab)) {
+      setCurrentTab(config.allowedTabs[0]);
+    }
     try {
       localStorage.setItem("pravah_active_user", JSON.stringify(account));
     } catch {}
@@ -178,6 +183,10 @@ export default function App() {
 
   const handleRoleChange = (newRole: string) => {
     setUserRole(newRole);
+    const config = getRolePermissions(newRole);
+    if (!config.allowedTabs.includes(currentTab)) {
+      setCurrentTab(config.allowedTabs[0]);
+    }
     const matched = demoAccounts.find((a) => a.role === newRole);
     if (matched) {
       setCurrentUser(matched);
@@ -215,6 +224,7 @@ export default function App() {
     );
   }
 
+  const roleConfig = getRolePermissions(userRole);
   const dbConnected = summary?.database_connected ?? true;
 
   return (
@@ -254,7 +264,49 @@ export default function App() {
             </div>
           )}
 
-          {currentTab === "overview" && (
+          {/* Gated views based on roleConfig.allowedTabs */}
+          {!roleConfig.allowedTabs.includes(currentTab) && (
+            <div
+              className="card"
+              style={{
+                padding: "48px 24px",
+                textAlign: "center",
+                maxWidth: 600,
+                margin: "40px auto",
+                borderRadius: 12,
+              }}
+            >
+              <div
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: "50%",
+                  background: "#fef2f2",
+                  color: "#dc2626",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 16px",
+                }}
+              >
+                <ShieldAlert size={28} />
+              </div>
+              <h3 style={{ margin: "0 0 8px", color: "var(--color-navy)", fontSize: "1.2rem" }}>
+                Restricted Dashboard Access
+              </h3>
+              <p style={{ color: "var(--color-slate)", margin: "0 0 20px", fontSize: "0.95rem", lineHeight: 1.5 }}>
+                The <strong>{userRole}</strong> role is not authorized to access the requested dashboard under the server-enforced RBAC policy.
+              </p>
+              <button
+                className="btn btn-primary"
+                onClick={() => setCurrentTab(roleConfig.allowedTabs[0] || "overview")}
+              >
+                Return to Accessible Dashboard
+              </button>
+            </div>
+          )}
+
+          {currentTab === "overview" && roleConfig.allowedTabs.includes("overview") && (
             <OverviewView
               summary={summary}
               alerts={alerts}
@@ -262,27 +314,30 @@ export default function App() {
               onSelectForecast={handleOpenForecast}
               onNavigateTab={setCurrentTab}
               onOpenTransaction={(item) => handleOpenTransaction(item, "receipt")}
+              canMutateInventory={roleConfig.canMutateInventory}
+              allowedTabs={roleConfig.allowedTabs}
             />
           )}
 
-          {currentTab === "inventory" && (
+          {currentTab === "inventory" && roleConfig.allowedTabs.includes("inventory") && (
             <InventoryView
               inventory={inventory}
               locations={locations}
               onOpenTransaction={handleOpenTransaction}
               onOpenForecast={handleOpenForecast}
               loading={loading}
+              canMutateInventory={roleConfig.canMutateInventory}
             />
           )}
 
-          {currentTab === "forecasts" && (
+          {currentTab === "forecasts" && roleConfig.allowedTabs.includes("forecasts") && (
             <ForecastsView
               inventory={inventory}
               preselectedItem={selectedForecastItem}
             />
           )}
 
-          {currentTab === "locations" && (
+          {currentTab === "locations" && roleConfig.allowedTabs.includes("locations") && (
             <LocationsView
               locations={locations}
               inventory={inventory}
@@ -290,29 +345,35 @@ export default function App() {
             />
           )}
 
-          {currentTab === "transportation" && (
+          {currentTab === "transportation" && roleConfig.allowedTabs.includes("transportation") && (
             <TransportationView
               shipments={shipments}
               locations={locations}
             />
           )}
 
-          {currentTab === "alerts" && (
+          {currentTab === "alerts" && roleConfig.allowedTabs.includes("alerts") && (
             <AlertsView
               alerts={alerts}
               onAlertAcknowledged={loadData}
+              canAcknowledge={roleConfig.canAcknowledgeAlerts}
             />
           )}
 
-          {currentTab === "audit_logs" && (
+          {currentTab === "audit_logs" && roleConfig.allowedTabs.includes("audit_logs") && (
             <AuditLogsView logs={auditLogs} />
           )}
 
-          {currentTab === "users" && (
-            <UserManagementView roles={roles} demoAccounts={demoAccounts} />
+          {currentTab === "users" && roleConfig.allowedTabs.includes("users") && (
+            <UserManagementView
+              roles={roles}
+              demoAccounts={demoAccounts}
+              onSelectRole={handleRoleChange}
+              onSwitchToAccount={handleLogin}
+            />
           )}
 
-          {currentTab === "settings" && (
+          {currentTab === "settings" && roleConfig.allowedTabs.includes("settings") && (
             <SettingsView dbConnected={dbConnected} />
           )}
         </main>
@@ -361,9 +422,17 @@ export default function App() {
               <h4 style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>
                 Forecasting Transparency
               </h4>
-              <p>
+              <p style={{ marginBottom: 12 }}>
                 Demand forecasting uses a verifiable 7-day moving-average baseline from historical daily usage observations.
                 No unvalidated black-box AI claims are made.
+              </p>
+              <h4 style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", marginBottom: 6 }}>
+                Demo Accounts & Persona Testing
+              </h4>
+              <p>
+                The prototype includes 6 pre-configured military operator personas (with shared password <code>Pravah@2026</code>).
+                Each persona features strictly scoped navigation and capabilities.
+                Use the top navigation bar's <strong>Role Preview</strong> switcher or the <strong>User Management</strong> view to test different operational clearances.
               </p>
             </div>
             <div className="modal-footer">
